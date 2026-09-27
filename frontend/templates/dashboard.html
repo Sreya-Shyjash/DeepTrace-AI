@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DeepTrace AI | Forensic Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { background: #000 url("{{ url_for('static', filename='images/bg.jpg') }}") no-repeat center center fixed; background-size: cover; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        header { height: 60px; border-bottom: 2px solid #00f2ff; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; background: rgba(0,0,0,0.9); z-index: 1000; }
+        .logo-small { font-family: 'Orbitron'; font-size: 22px; letter-spacing: 4px; font-weight: bold; }
+        main { display: grid; grid-template-columns: 320px 1fr 380px; grid-template-rows: 1fr 180px; gap: 15px; padding: 15px; flex-grow: 1; height: calc(100vh - 60px); }
+        .panel { background: rgba(0, 0, 0, 0.85); border: 1px solid #00f2ff; padding: 20px; display: flex; flex-direction: column; overflow: hidden;}
+        .panel-header { font-family: 'Orbitron'; font-size: 14px; color: #00f2ff; border-bottom: 1px solid rgba(0, 242, 255, 0.4); padding-bottom: 10px; margin-bottom: 15px; text-transform: uppercase; }
+        .timeline-item { margin-bottom: 15px; padding-left: 15px; border-left: 3px solid #222; }
+        .timeline-item.active { border-left-color: #00f2ff; }
+        .upload-bar { height: 50px; border: 1px dashed #00f2ff; display: flex; justify-content: center; align-items: center; cursor: pointer; background: rgba(0,242,255,0.05); font-size: 12px; margin-bottom: 10px; }
+        .comparison-box { flex-grow: 1; display: flex; gap: 10px; justify-content: center; align-items: center; background: #050505; border: 1px solid #222; overflow: hidden; position: relative; }
+        #image-preview, #ela-preview { max-width: 48%; max-height: 350px; border: 1px solid #333; display: none; }
+        .launch-btn { background: linear-gradient(90deg, #00f2ff, #0072ff); border: none; color: white; padding: 15px; font-family: 'Orbitron'; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; letter-spacing: 2px;}
+        .verdict-circle { width: 120px; height: 120px; border: 5px solid #111; border-radius: 50%; margin: 0 auto 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.5s; }
+        .score-val { font-family: 'Orbitron'; font-size: 28px; font-weight: bold; }
+        .findings-card { background: rgba(255,255,255,0.03); border: 1px solid #333; padding: 8px; margin-top: 8px; border-radius: 4px; }
+        .findings-card label { font-size: 10px; color: #00f2ff; display: block; margin-bottom: 2px; }
+        .findings-card p { font-size: 10px; word-break: break-all; color: #ddd; }
+        .progress-bar { width: 100%; height: 6px; background: #111; margin-top: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: #00f2ff; transition: 1s; }
+        .logs-container { grid-column: 1 / 4; background: #000; border: 1px solid #00f2ff; color: #00ff00; padding: 15px; font-size: 13px; overflow-y: auto; }
+    </style>
+</head>
+<body class="scanlines">
+    <header>
+        <div class="logo-small">DEEPTRACE <span style="color:#00f2ff">AI</span></div>
+        <div id="clock" style="font-size: 13px; font-weight: bold; color: #00f2ff;">00:00:00</div>
+    </header>
+    <main>
+        <section class="panel">
+            <div class="panel-header">Evidence Timeline</div>
+            <div class="timeline-item active" id="step-1"><small>PHASE 01</small><p>Evidence Received</p></div>
+            <div class="timeline-item" id="step-2"><small>PHASE 02</small><p>Hash Integrity</p></div>
+            <div class="timeline-item" id="step-3"><small>PHASE 03</small><p>Metadata Scan</p></div>
+            <div class="timeline-item" id="step-4"><small>PHASE 04</small><p>ELA Analysis</p></div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">Forensic Workspace</div>
+            <div class="upload-bar" onclick="document.getElementById('file-input').click()" id="upload-text">📁 CLICK TO UPLOAD DIGITAL EVIDENCE</div>
+            <div class="comparison-box"><img id="image-preview"><img id="ela-preview"></div>
+            <div style="display:flex; align-items:center; gap:10px; padding:10px 0;">
+                <small style="font-size:10px; color:#00f2ff">ELA SENSITIVITY</small>
+                <input type="range" id="ela-quality" min="50" max="98" value="90" style="flex-grow:1" onchange="runInvestigation()">
+            </div>
+            <input type="file" id="file-input" hidden accept="image/*">
+            <button class="launch-btn" onclick="runInvestigation()">🚀 START INVESTIGATION</button>
+        </section>
+
+        <section class="panel" style="overflow-y:auto;">
+            <div class="panel-header">Forensic Findings</div>
+            <div class="verdict-circle" id="verdict-ui">
+                <small style="font-size:9px">VERDICT</small>
+                <div class="score-val" id="score-text">--%</div>
+            </div>
+            <div class="findings-card"><label>MD5 HASH</label><p id="res-md5">Waiting...</p></div>
+            <!-- ADDED SHA-256 DISPLAY -->
+            <div class="findings-card"><label>SHA-256 HASH</label><p id="res-sha">Waiting...</p></div>
+            <div class="findings-card"><label>METADATA</label><p id="res-meta">Waiting...</p></div>
+            
+            <div class="findings-card" style="border-color:#ff2e2e; background:rgba(255,46,46,0.05);">
+                <label style="color:#ff2e2e; font-weight:bold;">WEB INTELLIGENCE</label>
+                <button id="tineye-btn" onclick="window.open(this.dataset.url, '_blank')" style="display:none; width:100%; background:transparent; border:1px solid #00f2ff; color:#00f2ff; font-family:'Orbitron'; font-size:9px; padding:5px; margin-top:5px; cursor:pointer;">SEARCH TINEYE</button>
+                <button id="google-btn" onclick="window.open('https://lens.google.com/upload', '_blank')" style="display:none; width:100%; background:transparent; border:1px solid #00f2ff; color:#00f2ff; font-family:'Orbitron'; font-size:9px; padding:5px; margin-top:5px; cursor:pointer;">GOOGLE LENS</button>
+            </div>
+
+            <div style="margin-top:10px">
+                <small style="font-size:10px; color:#00f2ff">MANIPULATION SCORE</small>
+                <div class="progress-bar"><div class="progress-fill" id="bar-ai"></div></div>
+            </div>
+            <button class="launch-btn" style="background:#222; border:1px solid #7000ff; margin-top:15px" onclick="generatePDF()">📄 GENERATE REPORT</button>
+        </section>
+        
+        <section class="logs-container" id="logs">[SYSTEM] Forensic OS Ready.</section>
+    </main>
+
+    <div class="cursor-dot"></div><div class="cursor-outline"></div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        fileInput.onchange = e => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => { document.getElementById('image-preview').src = reader.result; document.getElementById('image-preview').style.display='block'; }
+                reader.readAsDataURL(file);
+                document.getElementById('upload-text').innerText = file.name;
+            }
+        };
+
+        async function runInvestigation() {
+            const file = fileInput.files[0];
+            if (!file) return alert("Select file!");
+            addLog("Executing Forensic Sequence...");
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('quality', document.getElementById('ela-quality').value);
+            try {
+                const res = await fetch('/analyze', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                // Update Timeline & Hashes
+                document.getElementById('step-2').classList.add('active');
+                document.getElementById('res-md5').innerText = data.hashes.md5;
+                document.getElementById('res-sha').innerText = data.hashes.sha256; // Updated SHA Display
+                
+                setTimeout(() => {
+                    document.getElementById('step-3').classList.add('active');
+                    document.getElementById('res-meta').innerText = data.metadata.Model || "No EXIF found.";
+                    setTimeout(() => {
+                        document.getElementById('step-4').classList.add('active');
+                        document.getElementById('ela-preview').src = "data:image/jpeg;base64," + data.ela;
+                        document.getElementById('ela-preview').style.display='block';
+                        
+                        const score = data.score;
+                        document.getElementById('score-text').innerText = score + "%";
+                        document.getElementById('bar-ai').style.width = score + "%";
+                        
+                        const ui = document.getElementById('verdict-ui');
+                        const txt = document.getElementById('score-text');
+                        const color = score > 55 ? "#ff2e2e" : "#00ff00";
+                        ui.style.borderColor = color; ui.style.boxShadow = `0 0 20px ${color}`; txt.style.color = color;
+
+                        document.getElementById('tineye-btn').dataset.url = data.tineye;
+                        document.getElementById('tineye-btn').style.display = 'block';
+                        document.getElementById('google-btn').style.display = 'block';
+
+                        addLog("Analysis Synchronized.");
+                    }, 800);
+                }, 800);
+            } catch(e) { addLog("Engine Error."); }
+        }
+
+        async function generatePDF() {
+            const md5 = document.getElementById('res-md5').innerText;
+            const sha = document.getElementById('res-sha').innerText;
+            if(md5 === "Waiting...") return alert("Run investigation first!");
+            
+            const payload = {
+                md5: md5,
+                sha256: sha,
+                score: document.getElementById('score-text').innerText,
+                verdict: document.getElementById('score-text').style.color === "rgb(255, 46, 46)" ? "MANIPULATED" : "AUTHENTIC",
+                timestamp: new Date().toLocaleString()
+            };
+            const res = await fetch('/download_report', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const blob = await res.blob();
+            const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = "DeepTrace_Report.pdf"; a.click();
+        }
+
+        function addLog(msg) {
+            const logs = document.getElementById('logs');
+            logs.innerHTML += `<br><span style="color: #666;">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+    </script>
+</body>
+</html>

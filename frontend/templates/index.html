@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepTrace AI | Forensic OS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Local overrides to ensure maximum cinematic quality */
+        body {
+            /* Forcing a much darker background gradient over the image */
+            background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), 
+                        url("{{ url_for('static', filename='images/bg.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .container { 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            position: relative; 
+            z-index: 10; 
+        }
+
+        .version { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 12px; 
+            color: #ff2e2e; 
+            letter-spacing: 5px; 
+            margin-bottom: 5px; 
+            text-shadow: 0 0 10px rgba(255, 46, 46, 0.5);
+        }
+
+        .status { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 10px; 
+            color: #ff2e2e; 
+            letter-spacing: 8px; 
+            margin-bottom: 30px; 
+            opacity: 0.8;
+        }
+
+        /* HIGH-FIDELITY GLITCH TITLE */
+        .title { 
+            font-family: 'Archivo Black', sans-serif; 
+            font-size: clamp(50px, 10vw, 95px); 
+            letter-spacing: 8px; 
+            color: #fff; 
+            text-transform: uppercase;
+            position: relative;
+            /* Sliced RGB effect */
+            text-shadow: 0.05em 0 0 rgba(255,0,0,.75),
+                        -0.025em -0.05em 0 rgba(0,255,0,.75),
+                        0.025em 0.05em 0 rgba(0,0,255,.75);
+            animation: glitch 500ms infinite;
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 rgba(255,0,0,.75), -0.025em -0.05em 0 rgba(0,255,0,.75), 0.025em 0.05em 0 rgba(0,0,255,.75); }
+            15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,.75), 0.025em 0.025em 0 rgba(0,255,0,.75), -0.05em -0.05em 0 rgba(0,0,255,.75); }
+            50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,.75), -0.025em 0 0 rgba(0,255,0,.75), 0 -0.05em 0 rgba(0,0,255,.75); }
+            100% { text-shadow: -0.025em 0 0 rgba(255,0,0,.75), -0.025em -0.025em 0 rgba(0,255,0,.75), -0.05em -0.05em 0 rgba(0,0,255,.75); }
+        }
+
+        /* RESTORED SUBTITLE */
+        .subtitle { 
+            font-size: 24px; /* Increased size */
+            font-weight: 400; 
+            letter-spacing: 5px; 
+            margin: 15px 0 50px; 
+            color: #fff; 
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+
+        /* SCANNER BOX */
+        .scanner-box { 
+            position: relative; 
+            width: 220px; 
+            height: 260px; 
+            margin-bottom: 50px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        /* Corner Brackets */
+        .scanner-box::before, .scanner-box::after { 
+            content: ""; 
+            position: absolute; 
+            width: 30px; 
+            height: 30px; 
+            border: 2px solid #00f2ff; 
+            box-shadow: 0 0 15px #00f2ff; 
+        }
+        .scanner-box::before { top: -10px; left: -10px; border-right: 0; border-bottom: 0; }
+        .scanner-box::after { top: -10px; right: -10px; border-left: 0; border-bottom: 0; }
+
+        .scan-line { 
+            position: absolute; 
+            width: 110%; 
+            height: 3px; 
+            background: #ff2e2e; 
+            box-shadow: 0 0 15px #ff2e2e, 0 0 30px #ff2e2e; 
+            animation: scan 3s infinite linear; 
+            z-index: 5; 
+        }
+
+        @keyframes scan { 
+            0%, 100% { top: 0%; opacity: 0; } 
+            50% { top: 100%; opacity: 1; } 
+        }
+
+        /* RED NEON MOTTO */
+        .motto { 
+            font-family: 'Orbitron', sans-serif; 
+            color: #ff2e2e; 
+            font-size: 16px; 
+            font-weight: 700;
+            letter-spacing: 12px; 
+            margin-bottom: 60px; 
+            text-shadow: 0 0 15px #ff2e2e; 
+            text-transform: uppercase;
+        }
+
+        /* ENTER BUTTON */
+        .btn { 
+            background: rgba(0, 0, 0, 0.6); 
+            border: 1px solid #7000ff; 
+            color: #fff; 
+            padding: 22px 70px; 
+            font-family: 'Orbitron', sans-serif; 
+            letter-spacing: 5px; 
+            text-decoration: none; 
+            transition: 0.4s; 
+            backdrop-filter: blur(15px);
+            border-radius: 2px;
+            font-size: 14px;
+        }
+
+        .btn:hover { 
+            background: #7000ff; 
+            box-shadow: 0 0 50px rgba(112, 0, 255, 0.8); 
+            color: #000; 
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body class="scanlines">
+
+    <!-- The external cursor elements -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <div class="container">
+        <div class="version">VER 2.0.0</div>
+        <div class="status">SYSTEM INITIALIZING...</div>
+        
+        <h1 class="title">DEEPTRACE AI</h1>
+        
+        <!-- RESTORED & CORRECTED SUBTITLE -->
+        <div class="subtitle">AI-POWERED DIGITAL IMAGE FORENSICS</div>
+
+        <div class="scanner-box">
+            <div class="scan-line"></div>
+            <img src="{{ url_for('static', filename='images/fingerprint.png') }}" style="width: 100%; filter: drop-shadow(0 0 10px #00f2ff);">
+            <!-- Bottom brackets (Optional CSS helper) -->
+            <div style="position: absolute; width:100%; height:100%; top:0; left:0;">
+                <div style="position: absolute; bottom:-10px; left:-10px; width:30px; height:30px; border:2px solid #00f2ff; border-top:0; border-right:0; box-shadow: 0 0 15px #00f2ff;"></div>
+                <div style="position: absolute; bottom:-10px; right:-10px; width:30px; height:30px; border:2px solid #00f2ff; border-top:0; border-left:0; box-shadow: 0 0 15px #00f2ff;"></div>
+            </div>
+        </div>
+
+        <div class="motto">DETECT • ANALYZE • TRACE • REVEAL</div>
+
+        <a href="/dashboard" class="btn">ENTER THE FORENSIC LAB</a>
+    </div>
+
+    <!-- Script at the end of body -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

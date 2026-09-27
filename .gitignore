@@ -1,4 +1,17 @@
+# Python
 venv/
 __pycache__/
+*.pyc
+
+# Project Specific
+uploads/*
+!uploads/.gitkeep
+frontend/static/uploads/*
+
+# System
 .DS_Store
-.streamlit/
+Thumbs.db
+
+# Large Model files (if any)
+models/*.h5
+models/*.keras

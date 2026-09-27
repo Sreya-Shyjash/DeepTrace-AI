@@ -1,6 +1,5 @@
-streamlit
+flask
 pillow
 exifread
-pandas
 opencv-python
 numpy
